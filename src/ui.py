@@ -11,7 +11,7 @@ from . import geocoding, map_utils
 from .database import SchonVorhanden, SpeicherFehler
 from .models import (ARTEN, HOEHE_QUELLEN, art_label, bereinigen, datum_text, dauer_text, ersatz_name,
                      hoehe_text, moegliche_duplikate, neue_id, partner_liste, pruefen)
-from .photo_storage import ERLAUBTE_ENDUNGEN, MAX_UPLOAD_MB, FotoFehler, aufbereiten
+from .photo_storage import MAX_UPLOAD_MB, FotoFehler, aufbereiten
 
 SS = st.session_state
 SEITE_TOUR = "app_pages/tour.py"
@@ -310,7 +310,9 @@ def _fotos_hochladen(sp, tour_id: str, dateien, beschriftungen: dict[int, str]) 
 
 def _foto_auswahl(prefix: str, token: str):
     dateien = st.file_uploader(
-        "Fotos hinzufügen", type=ERLAUBTE_ENDUNGEN, accept_multiple_files=True,
+        # "image" statt einzelner Endungen: nur so bieten Handys neben der Kamera auch die Galerie an.
+        # Das Format prüft danach photo_storage.aufbereiten.
+        "Fotos hinzufügen", type="image", accept_multiple_files=True,
         key=f"{prefix}_fotos_{token}", max_upload_size=MAX_UPLOAD_MB,
         help=f"JPEG, PNG oder WebP, je Foto höchstens {MAX_UPLOAD_MB} MB. Mehrere Fotos auf einmal auswählen ist möglich. "
              "Ortsangaben (GPS) in den Fotos werden beim Speichern entfernt.",
@@ -455,6 +457,11 @@ def foto_dialog(sp, fotos: list[dict]) -> None:
     else:
         st.image(quelle, caption=foto.get("beschriftung"), width="stretch",
                  alt=foto.get("beschriftung") or foto.get("dateiname") or "Foto")
+        # Gespeichert ist immer JPEG; das Foto wird erst beim Antippen geladen.
+        name = (foto.get("dateiname") or "foto").rsplit(".", 1)[0] + ".jpg"
+        st.download_button("Foto herunterladen", data=lambda: sp.photo_bytes(foto), file_name=name,
+                           mime="image/jpeg", icon=":material/download:", on_click="ignore",
+                           key=f"fd_laden_{foto['id']}")
     if len(fotos) > 1:
         c1, c2, c3 = st.columns([1, 1, 1], vertical_alignment="center")
         if c1.button("Zurück", icon=":material/chevron_left:", width="stretch"):

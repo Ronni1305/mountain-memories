@@ -127,3 +127,12 @@ def test_favorit_markieren_und_filtern(app_mit_tour):
     assert any("1 von" in c.value for c in at.caption)
     at.selectbox(key="mt_jahr").set_value("2026").run()
     assert not at.exception
+
+
+def test_foto_hochladen_bietet_galerie_und_foto_laesst_sich_laden(app_mit_tour):
+    from src import ui
+    import inspect
+
+    assert 'type="image"' in inspect.getsource(ui._foto_auswahl)  # image/* → Handy zeigt die Galerie
+    foto = app_mit_tour.list_photos("t-app")[0]
+    assert app_mit_tour.photo_bytes(foto)[:2] == b"\xff\xd8"  # JPEG
