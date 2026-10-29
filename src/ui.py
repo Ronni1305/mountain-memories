@@ -100,24 +100,32 @@ def positions_auswahl(prefix: str, start: tuple[float, float] | None = None) -> 
         suche = st.text_input("Ort oder Gipfel suchen", key=f"{prefix}_suche",
                               placeholder="z. B. Wildspitze, Achensee …")
         st.button("Suchen", key=f"{prefix}_suche_los", icon=":material/search:")
-    if suche.strip():
-        try:
-            treffer = geocoding.ort_suchen(suche.strip(), *ansicht["center"])
-        except Exception:  # noqa: BLE001
-            treffer = None
-            st.warning("Die Ortssuche ist gerade nicht erreichbar. Die Karte lässt sich trotzdem verschieben.")
+    suche = suche.strip()
+    if suche:
+        # Treffer einmal je Suchtext ermitteln und festhalten. Würde nach jedem Sprung neu gesucht,
+        # sortiert die Suche um die neue Kartenmitte anders, und die Auswahl zeigt auf einen anderen Ort.
+        if SS.get(f"{prefix}_treffer", (None,))[0] != suche:
+            try:
+                SS[f"{prefix}_treffer"] = (suche, geocoding.ort_suchen(suche, *ansicht["center"]))
+            except Exception:  # noqa: BLE001
+                SS.pop(f"{prefix}_treffer", None)
+                st.warning("Die Ortssuche ist gerade nicht erreichbar. Die Karte lässt sich trotzdem verschieben.")
+        treffer = SS.get(f"{prefix}_treffer", (None, None))[1]
         if treffer == []:
             st.caption("Nichts gefunden – anders schreiben oder die Karte direkt verschieben.")
         elif treffer:
-            auswahl = st.selectbox(
-                "Suchergebnis", range(len(treffer)), index=None, key=f"{prefix}_treffer_{suche}",
-                format_func=lambda i: f"{treffer[i]['name']} – {treffer[i]['zusatz']}",
-                placeholder="Ergebnis wählen, um dorthin zu springen",
-            )
-            if auswahl is not None:
+            auswahl = 0
+            if len(treffer) > 1:
+                auswahl = st.selectbox(
+                    "Gefunden – die Karte zeigt den ersten Treffer. Anderen Ort wählen:", range(len(treffer)),
+                    key=f"{prefix}_treffer_{suche}",
+                    format_func=lambda i: geocoding.treffer_text(i, treffer[i]),
+                )
+            # Nur springen, wenn Suche oder Auswahl neu sind – danach darf die Karte frei verschoben werden.
+            if SS.get(f"{prefix}_gesprungen") != (suche, auswahl):
+                SS[f"{prefix}_gesprungen"] = (suche, auswahl)
                 ziel = (treffer[auswahl]["lat"], treffer[auswahl]["lon"])
-                if ansicht["center"] != ziel:
-                    SS[f"{prefix}_ansicht"] = ansicht = {"center": ziel, "zoom": 14}
+                SS[f"{prefix}_ansicht"] = ansicht = {"center": ziel, "zoom": 14}
 
     st.html(FADENKREUZ_CSS.format(key=f"{prefix}_kartenrahmen"))
     karte = map_utils.grundkarte(SS[f"{prefix}_kartenstart"], ansicht["zoom"])

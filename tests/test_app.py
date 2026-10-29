@@ -158,3 +158,19 @@ def test_einzeln_gesammelte_fotos_werden_gespeichert_und_entfernbar(app_mit_tour
     at.button(key="nt_speichern").click().run()
     assert not at.exception
     assert [f["dateiname"] for f in app_mit_tour.list_photos("t-fotos")] == ["a.jpg"]
+
+
+def test_ortssuche_springt_zum_ersten_treffer_auch_bei_gleichen_namen(app_mit_tour, monkeypatch):
+    from src import geocoding
+
+    gleich = {"name": "Wildspitze", "zusatz": "Sölden, Tirol, Österreich"}
+    treffer = [dict(gleich, lat=46.8852, lon=10.8673, art="Gipfel"), dict(gleich, lat=46.8638, lon=10.9045, art="Station"),
+               dict(gleich, lat=46.8602, lon=10.9150, art="Station")]
+    monkeypatch.setattr(geocoding, "ort_suchen", lambda *a, **k: treffer)
+    at = lauf("app_pages/neue_tour.py")
+    at.text_input(key="nt_suche").set_value("Wildspitze").run()
+    at.run()  # weitere Neudarstellung darf nicht woandershin springen
+    assert at.session_state["nt_ansicht"]["center"] == (46.8852, 10.8673)
+    at.selectbox(key="nt_treffer_Wildspitze").set_value(2).run()
+    at.run()
+    assert at.session_state["nt_ansicht"]["center"] == (46.8602, 10.9150)

@@ -198,5 +198,25 @@ def ort_suchen(text: str, nahe_lat: float | None = None, nahe_lon: float | None 
         p = f.get("properties", {})
         lon, lat = f["geometry"]["coordinates"][:2]
         zusatz = ", ".join(x for x in (p.get("city") or p.get("county"), p.get("state"), p.get("country")) if x)
-        treffer.append({"name": p.get("name") or zusatz, "zusatz": zusatz, "lat": lat, "lon": lon})
+        treffer.append({"name": p.get("name") or zusatz, "zusatz": zusatz, "lat": lat, "lon": lon,
+                        "art": SUCH_ARTEN.get(p.get("osm_value"))})
     return treffer
+
+
+# Art des Treffers, damit gleichnamige Treffer unterscheidbar sind („Wildspitze“ als Gipfel,
+# Bergstation und Sessellift).
+SUCH_ARTEN = {
+    "peak": "Gipfel", "volcano": "Gipfel", "saddle": "Sattel", "mountain_pass": "Pass", "ridge": "Grat",
+    "alpine_hut": "Hütte", "wilderness_hut": "Hütte", "hut": "Hütte", "glacier": "Gletscher",
+    "station": "Station", "chair_lift": "Sessellift", "cable_car": "Seilbahn", "gondola": "Gondelbahn",
+    "drag_lift": "Schlepplift", "restaurant": "Restaurant", "hotel": "Hotel", "parking": "Parkplatz",
+    "city": "Stadt", "town": "Ort", "village": "Ort", "hamlet": "Weiler", "locality": "Flur",
+    "lake": "See", "water": "See", "reservoir": "Stausee", "valley": "Tal", "climbing": "Klettergebiet",
+    "crag": "Klettergebiet", "cliff": "Felswand", "waterfall": "Wasserfall",
+}
+
+
+def treffer_text(i: int, t: dict) -> str:
+    """Eindeutige Beschriftung – die Auswahlliste unterscheidet Einträge nur am Text."""
+    art = f" ({t['art']})" if t.get("art") else ""
+    return f"{i + 1}. {t['name']}{art} – {t['zusatz']}"
