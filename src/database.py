@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS tours (
     wetter TEXT,
     bericht TEXT,
     bewertung INTEGER,
+    favorit INTEGER NOT NULL DEFAULT 0,
     titelbild_id TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -94,6 +95,10 @@ class LokalerSpeicher:
         self.db_datei = self.ordner / "tourenbuch.sqlite"
         with self._verbindung() as con:
             con.executescript(_SQLITE_SCHEMA)
+            # Spalten, die nach der ersten Version dazugekommen sind
+            spalten = {z["name"] for z in con.execute("PRAGMA table_info(tours)")}
+            if "favorit" not in spalten:
+                con.execute("ALTER TABLE tours ADD COLUMN favorit INTEGER NOT NULL DEFAULT 0")
 
     def _verbindung(self) -> sqlite3.Connection:
         con = sqlite3.connect(self.db_datei, timeout=10)
@@ -248,6 +253,9 @@ class SupabaseSpeicher:
                 raise SchonVorhanden("Dieser Eintrag ist bereits gespeichert.") from exc
             if code in ("42501", "PGRST301"):
                 raise AnmeldungAbgelaufen("Keine Berechtigung – bitte neu anmelden.") from exc
+            if code == "PGRST204":  # Spalte fehlt: Datenbank ist älter als die App
+                raise SpeicherFehler("Die Datenbank ist noch nicht auf dem neuesten Stand. Bitte die Datei "
+                                     "supabase/schema.sql in Supabase nochmals ausführen.") from exc
             raise SpeicherFehler(f"{was} ist gerade nicht möglich. Bitte später nochmals versuchen.") from exc
 
     @property

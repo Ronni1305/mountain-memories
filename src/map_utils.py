@@ -66,14 +66,19 @@ SYMBOLE = {
 FORMEN = {"wandern": "50%", "klettern": "22%", "bergsteigen": "50% 50% 50% 6%"}
 
 
-def symbol_html(art: str, groesse: int = 34) -> str:
+HERZ_HTML = ('<span style="position:absolute;top:-7px;right:-7px;font-size:14px;line-height:1;'
+             'filter:drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff)">❤️</span>')
+
+
+def symbol_html(art: str, groesse: int = 34, favorit: bool = False) -> str:
     farbe = ARTEN.get(art, {}).get("farbe", "#555")
     innen = int(groesse * 0.62)
     return (
-        f'<div style="width:{groesse}px;height:{groesse}px;border-radius:{FORMEN.get(art, "50%")};'
+        f'<div style="position:relative;width:{groesse}px;height:{groesse}px;border-radius:{FORMEN.get(art, "50%")};'
         f'background:{farbe};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);'
         f'display:flex;align-items:center;justify-content:center;">'
-        f'<svg width="{innen}" height="{innen}" viewBox="0 0 24 24" aria-hidden="true">{SYMBOLE.get(art, "")}</svg></div>'
+        f'<svg width="{innen}" height="{innen}" viewBox="0 0 24 24" aria-hidden="true">{SYMBOLE.get(art, "")}</svg>'
+        f'{HERZ_HTML if favorit else ""}</div>'
     )
 
 
@@ -83,6 +88,8 @@ def legende_html() -> str:
         f'{symbol_html(art, 24)}<span>{info["label"]}</span></span>'
         for art, info in ARTEN.items()
     ]
+    teile.append('<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">'
+                 '<span>❤️</span><span>Favorit</span></span>')
     return f'<div style="display:flex;flex-wrap:wrap;row-gap:6px;font-size:0.95rem">{"".join(teile)}</div>'
 
 
@@ -116,7 +123,7 @@ def tourenkarte(touren: list[dict]) -> folium.Map:
     for t in mit_pos:
         folium.Marker(
             location=[t["lat"], t["lon"]],
-            icon=folium.DivIcon(html=symbol_html(t.get("art")), icon_size=(34, 34), icon_anchor=(17, 17),
+            icon=folium.DivIcon(html=symbol_html(t.get("art"), favorit=bool(t.get("favorit"))), icon_size=(34, 34), icon_anchor=(17, 17),
                                 class_name="mm-symbol"),
             tooltip=f"{art_label(t.get('art'))}: {_tooltip(t)}",
         ).add_to(ziel)

@@ -115,3 +115,15 @@ def test_neue_tour_ohne_namen_und_ohne_hoehe_speichern(app_mit_tour):
     neu = next(t for t in touren if t["name"].startswith("Wanderung vom"))
     assert neu["hoehe_m"] is None and neu["dauer_min"] is None
     assert any("gespeichert" in s.value for s in at.success)
+
+
+def test_favorit_markieren_und_filtern(app_mit_tour):
+    at = lauf("app_pages/tour.py", mm_tour_id="t-app")
+    at.button(key="tp_favorit").click().run()
+    assert not at.exception
+    assert app_mit_tour.get_tour("t-app")["favorit"]
+    at = lauf("app_pages/meine_touren.py")
+    at.toggle(key="mt_favoriten").set_value(True).run()
+    assert any("1 von" in c.value for c in at.caption)
+    at.selectbox(key="mt_jahr").set_value("2026").run()
+    assert not at.exception

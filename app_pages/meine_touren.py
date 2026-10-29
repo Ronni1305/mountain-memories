@@ -24,7 +24,13 @@ with st.container(horizontal=True, vertical_alignment="bottom"):
                      format_func=art_label, key="mt_arten")
     sortierung = st.selectbox("Sortieren", list(statistics.SORTIERUNGEN), key="mt_sort", width=240)
 
-liste = statistics.SORTIERUNGEN[sortierung](statistics.filtern(alle, arten=arten, suche=suche))
+jahre = sorted({t["datum"][:4] for t in alle if t.get("datum")}, reverse=True)
+with st.container(horizontal=True, vertical_alignment="bottom"):
+    jahr = st.selectbox("Jahr", ["Alle Jahre"] + jahre, key="mt_jahr", width=180)
+    nur_favoriten = st.toggle("Nur Favoriten", key="mt_favoriten")
+
+liste = statistics.SORTIERUNGEN[sortierung](statistics.filtern(
+    alle, arten=arten, suche=suche, jahr=None if jahr == "Alle Jahre" else jahr, nur_favoriten=nur_favoriten))
 st.caption(f"{len(liste)} von {len(alle)} Touren")
 
 anzeigen = st.session_state.setdefault("mt_anzahl", SEITENGROESSE)
@@ -45,7 +51,7 @@ for t in sichtbar:
         else:
             st.markdown(f"## {ARTEN[t['art']]['emoji']}", width=96, text_alignment="center")
         with st.container(gap="xxsmall"):
-            st.markdown(f"**{t['name']}**")
+            st.markdown(f"**{t['name']}**" + (" ❤️" if t.get("favorit") else ""))
             teile = [datum_text(t["datum"]), art_label(t["art"], mit_emoji=False)]
             if hoehe_text(t):
                 teile.append(hoehe_text(t))

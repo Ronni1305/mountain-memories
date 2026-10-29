@@ -12,7 +12,8 @@ from .models import ARTEN, als_datum, name_schluessel, partner_liste
 
 
 def filtern(touren: list[dict], arten=None, von: date | None = None, bis: date | None = None,
-            regionen=None, suche: str | None = None) -> list[dict]:
+            regionen=None, suche: str | None = None, jahr: str | None = None,
+            nur_favoriten: bool = False) -> list[dict]:
     such = (suche or "").strip().casefold()
     ergebnis = []
     for t in touren:
@@ -22,6 +23,10 @@ def filtern(touren: list[dict], arten=None, von: date | None = None, bis: date |
         if von and (not d or d < von):
             continue
         if bis and (not d or d > bis):
+            continue
+        if jahr and (t.get("datum") or "")[:4] != str(jahr):
+            continue
+        if nur_favoriten and not t.get("favorit"):
             continue
         if regionen and (t.get("region") or "Ohne Region") not in regionen:
             continue

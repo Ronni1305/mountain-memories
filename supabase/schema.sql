@@ -26,6 +26,7 @@ create table if not exists public.tours (
     wetter        text,
     bericht       text,
     bewertung     smallint check (bewertung between 1 and 5),
+    favorit       boolean not null default false,
     titelbild_id  uuid,
     created_at    timestamptz not null default now(),
     updated_at    timestamptz not null default now()
@@ -47,6 +48,9 @@ create table if not exists public.photos (
 
 create index if not exists tours_user_datum on public.tours (user_id, datum desc);
 create index if not exists photos_tour on public.photos (tour_id);
+
+-- Spalten, die nach der ersten Version dazugekommen sind
+alter table public.tours add column if not exists favorit boolean not null default false;
 
 -- Titelbild: zeigt auf ein Foto; wird das Foto gelöscht, wird das Feld automatisch leer.
 do $$

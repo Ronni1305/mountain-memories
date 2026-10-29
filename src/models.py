@@ -25,7 +25,7 @@ HOEHE_QUELLEN = {
 TOUR_FELDER = [
     "id", "art", "name", "datum", "lat", "lon", "hoehe_m", "hoehe_quelle", "region",
     "dauer_min", "partner", "ausgangspunkt", "ziel", "hm_auf", "hm_ab", "schwierigkeit",
-    "wetter", "bericht", "bewertung", "titelbild_id", "created_at", "updated_at",
+    "wetter", "bericht", "bewertung", "favorit", "titelbild_id", "created_at", "updated_at",
 ]
 FOTO_FELDER = [
     "id", "tour_id", "pfad", "thumb_pfad", "dateiname", "beschriftung", "breite", "hoehe",
@@ -133,6 +133,8 @@ def bereinigen(daten: dict) -> dict:
     if "datum" in tour:
         d = als_datum(tour["datum"])
         tour["datum"] = d.isoformat() if d else None
+    if "favorit" in tour:
+        tour["favorit"] = bool(tour["favorit"]) and str(tour["favorit"]).strip().lower() not in ("0", "false", "nein")
     if tour.get("bewertung") is not None and not 1 <= tour["bewertung"] <= 5:
         tour["bewertung"] = None
     if "hoehe_m" in tour and tour["hoehe_m"] is None:

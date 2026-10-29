@@ -81,3 +81,17 @@ def test_filter_und_sortierung():
     hoehe = statistics.SORTIERUNGEN["Höhe – höchste zuerst"](TOUREN)
     assert [t["id"] for t in hoehe][:2] == ["4", "2"]
     assert statistics.SORTIERUNGEN["Name A–Z"](TOUREN)[0]["name"] == "Martinswand"
+
+
+def test_filter_jahr_und_favoriten():
+    touren = [dict(t, favorit=(t["id"] == "4")) for t in TOUREN]
+    assert [t["id"] for t in statistics.filtern(touren, jahr="2025")] == ["2", "3", "4"]
+    assert [t["id"] for t in statistics.filtern(touren, nur_favoriten=True)] == ["4"]
+    assert statistics.filtern(touren, jahr="2024", nur_favoriten=True) == []
+
+
+def test_favorit_wird_wahrheitswert():
+    assert bereinigen({"favorit": 1})["favorit"] is True
+    assert bereinigen({"favorit": "ja"})["favorit"] is True
+    assert bereinigen({"favorit": "0"})["favorit"] is False and bereinigen({"favorit": None})["favorit"] is False
+    assert "favorit" not in bereinigen({"name": "x"})  # nur mitschicken, wenn geändert

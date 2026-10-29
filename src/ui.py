@@ -523,7 +523,8 @@ def _kennzahl_zeile(tour: dict) -> None:
 
 def tour_details(sp, tour: dict, key: str = "td", kompakt: bool = False) -> None:
     fotos = fotos_von(sp, tour["id"])
-    st.subheader(f"{ARTEN[tour['art']]['emoji']} {tour['name']}", anchor=False)
+    herz = " ❤️" if tour.get("favorit") else ""
+    st.subheader(f"{ARTEN[tour['art']]['emoji']} {tour['name']}{herz}", anchor=False)
     teile = [art_label(tour["art"], mit_emoji=False), datum_text(tour["datum"])]
     if tour.get("region"):
         teile.append(tour["region"])
@@ -553,6 +554,13 @@ def tour_details(sp, tour: dict, key: str = "td", kompakt: bool = False) -> None
                f"[auf OpenStreetMap ansehen](https://www.openstreetmap.org/?mlat={tour['lat']:.5f}"
                f"&mlon={tour['lon']:.5f}#map=15/{tour['lat']:.5f}/{tour['lon']:.5f})")
     with st.container(horizontal=True):
+        favorit = bool(tour.get("favorit"))
+        if st.button("Favorit" if favorit else "Als Favorit merken", key=f"{key}_favorit",
+                     icon=":material/favorite:" if favorit else ":material/favorite_border:",
+                     help="Favorit wieder entfernen" if favorit else "Besonders schöne Tour markieren"):
+            sp.update_tour(tour["id"], {"favorit": not favorit})
+            neu_laden()
+            st.rerun()
         if kompakt and st.button("Ganze Tour öffnen", key=f"{key}_oeffnen", icon=":material/open_in_full:",
                                  type="primary"):
             tour_oeffnen(tour["id"])

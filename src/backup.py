@@ -35,7 +35,7 @@ CSV_SPALTEN = [
     ("dauer", "Dauer"), ("dauer_min", "Dauer (min)"), ("partner", "Bergpartner"),
     ("ausgangspunkt", "Ausgangspunkt"), ("ziel", "Ziel / Gipfel"), ("hm_auf", "Hm Aufstieg"),
     ("hm_ab", "Hm Abstieg"), ("schwierigkeit", "Schwierigkeit"), ("wetter", "Wetter / Bedingungen"),
-    ("bewertung", "Bewertung (1–5)"), ("bericht", "Bericht"), ("fotos", "Anzahl Fotos"), ("id", "ID"),
+    ("bewertung", "Bewertung (1–5)"), ("favorit", "Favorit"), ("bericht", "Bericht"), ("fotos", "Anzahl Fotos"), ("id", "ID"),
 ]
 
 
@@ -59,6 +59,8 @@ def touren_csv(touren: list[dict], fotos: list[dict]) -> bytes:
                 wert = art_label(t.get("art"), mit_emoji=False)
             elif k == "dauer":
                 wert = dauer_text(t.get("dauer_min")) or ""
+            elif k == "favorit":
+                wert = "ja" if t.get("favorit") else ""
             elif k == "fotos":
                 wert = anzahl.get(t["id"], 0)
             elif k in ("lat", "lon") and t.get(k) is not None:

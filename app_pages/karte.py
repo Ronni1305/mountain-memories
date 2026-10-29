@@ -28,9 +28,11 @@ with st.expander("Filter", icon=":material/filter_alt:"):
     zeitraum = st.date_input("Zeitraum", value=(erstes, date.today()), min_value=erstes,
                              max_value=date.today(), format="DD.MM.YYYY", key="ka_zeitraum")
     regionen = st.multiselect("Regionen", regionen_alle, key="ka_regionen", placeholder="Alle Regionen")
+    nur_favoriten = st.toggle("Nur Favoriten", key="ka_favoriten")
 
 von, bis = (zeitraum + (None, None))[:2] if isinstance(zeitraum, tuple) else (None, None)
-gefiltert = statistics.filtern(alle, arten=arten, von=von, bis=bis, regionen=regionen)
+gefiltert = statistics.filtern(alle, arten=arten, von=von, bis=bis, regionen=regionen,
+                               nur_favoriten=nur_favoriten)
 
 anzahl = len(gefiltert)
 st.caption(f"{anzahl} von {len(alle)} Touren angezeigt · Symbol antippen für Details"
