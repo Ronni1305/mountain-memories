@@ -1,0 +1,21 @@
+# Zugangsdaten – niemals veröffentlichen
+.streamlit/secrets.toml
+.env
+*.env
+
+# Private Daten des lokalen Testmodus (Touren und Fotos)
+daten/
+
+# Sicherungen, die versehentlich im Projektordner landen
+mountain-memories-sicherung-*.zip
+mountain-memories-sicherung-*.json
+mountain-memories-touren-*.csv
+
+# Python und Werkzeuge
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+Thumbs.db

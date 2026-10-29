@@ -1,0 +1,16 @@
+{
+  "name": "Mountain Memories – Mein Tourenbuch",
+  "short_name": "Tourenbuch",
+  "description": "Persönliches Tourenbuch für Wanderungen, Klettertouren und Bergbesteigungen",
+  "lang": "de",
+  "start_url": "../../",
+  "scope": "../../",
+  "display": "standalone",
+  "background_color": "#f6f5f0",
+  "theme_color": "#1f3d4a",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

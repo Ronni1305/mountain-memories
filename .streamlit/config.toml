@@ -1,0 +1,24 @@
+[server]
+# Liefert static/ unter app/static/ aus (Manifest und Startbildschirm-Symbole)
+enableStaticServing = true
+# Fotos werden vor dem Speichern verkleinert; 25 MB je Datei reichen für Handyfotos
+maxUploadSize = 500
+
+[client]
+# Keine technischen Fehlermeldungen an die Benutzerin
+showErrorDetails = "none"
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#2e6b5e"
+backgroundColor = "#f6f5f0"
+secondaryBackgroundColor = "#e9e7df"
+textColor = "#1d2a2f"
+borderColor = "#d6d3c8"
+baseRadius = "0.6rem"
+font = "sans-serif"
+baseFontSize = 16
