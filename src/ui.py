@@ -328,6 +328,8 @@ def _foto_auswahl(prefix: str, token: str):
         key=f"{prefix}_foto_{token}_{runde}", max_upload_size=MAX_UPLOAD_MB,
         help=hilfe + " Für jedes weitere Foto erneut antippen.",
     )
+    # Die Samsung-Galerie lässt hier trotzdem mehrere Fotos markieren, liefert dann aber keines.
+    st.caption("Immer **nur 1 Foto** markieren und „OK“ tippen – danach das nächste.")
     with st.expander("Mehrere Fotos auf einmal (z. B. am Computer)", icon=":material/photo_library:"):
         mehrere = st.file_uploader("Fotos auswählen", type="image", accept_multiple_files=True,
                                    key=f"{prefix}_fotos_{token}_{runde}", max_upload_size=MAX_UPLOAD_MB,
