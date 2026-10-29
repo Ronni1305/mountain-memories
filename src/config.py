@@ -59,7 +59,13 @@ def anmelden(zugang: dict, email: str, passwort: str) -> str | None:
             return "Die E-Mail-Adresse ist noch nicht bestätigt (siehe Anleitung im README)."
         if "rate limit" in text or "too many" in text:
             return "Zu viele Versuche. Bitte ein paar Minuten warten."
-        return "Die Anmeldung ist gerade nicht möglich. Bitte Internetverbindung prüfen und erneut versuchen."
+        if "email logins are disabled" in text or "provider is disabled" in text:
+            return ("Die Anmeldung mit E-Mail ist in Supabase ausgeschaltet "
+                    "(Authentication → Sign In / Providers → Email einschalten).")
+        if "api key" in text or "apikey" in text:
+            return "Der Supabase-Schlüssel in den Secrets stimmt nicht (anon_key prüfen)."
+        return ("Die Anmeldung ist gerade nicht möglich. Bitte Internetverbindung prüfen und erneut versuchen."
+                f"\n\nTechnischer Hinweis: {str(exc)[:300]}")
     if not antwort or not antwort.user:
         return "E-Mail-Adresse oder Passwort stimmen nicht."
     st.session_state["mm_client"] = client
