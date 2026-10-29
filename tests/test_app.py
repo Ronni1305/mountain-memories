@@ -136,3 +136,25 @@ def test_foto_hochladen_bietet_galerie_und_foto_laesst_sich_laden(app_mit_tour):
     assert 'type="image"' in inspect.getsource(ui._foto_auswahl)  # image/* → Handy zeigt die Galerie
     foto = app_mit_tour.list_photos("t-app")[0]
     assert app_mit_tour.photo_bytes(foto)[:2] == b"\xff\xd8"  # JPEG
+
+
+class _Datei(__import__("io").BytesIO):
+    """Ersatz für ein hochgeladenes Foto (AppTest kann keine Dateien hochladen)."""
+
+    def __init__(self, daten: bytes, name: str):
+        super().__init__(daten)
+        self.name, self.size, self.file_id = name, len(daten), name
+
+
+def test_einzeln_gesammelte_fotos_werden_gespeichert_und_entfernbar(app_mit_tour):
+    fotos = [_Datei(bild_bytes(), "a.jpg"), _Datei(bild_bytes(farbe=(10, 120, 200)), "b.jpg")]
+    at = lauf("app_pages/neue_tour.py", nt_token="t-fotos",
+              **{"nt_sammlung_t-fotos": fotos, "nt_pos": (47.1, 11.1), "nt_geo_fuer": (47.1, 11.1)})
+    assert at.text_input(key="nt_cap_t-fotos_b.jpg")
+    at.button(key="nt_weg_t-fotos_b.jpg").click().run()
+    assert not at.exception
+    at.segmented_control(key="nt_art").set_value("wandern").run()
+    at.text_input(key="nt_name").set_value("Fototest").run()
+    at.button(key="nt_speichern").click().run()
+    assert not at.exception
+    assert [f["dateiname"] for f in app_mit_tour.list_photos("t-fotos")] == ["a.jpg"]

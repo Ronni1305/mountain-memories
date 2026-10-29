@@ -308,23 +308,47 @@ def _fotos_hochladen(sp, tour_id: str, dateien, beschriftungen: dict[int, str]) 
     return gespeichert, fehler
 
 
+def _sammeln(sammlung: list, neue) -> None:
+    for d in neue:
+        if not any(s.name == d.name and s.size == d.size for s in sammlung):
+            sammlung.append(d)
+
+
 def _foto_auswahl(prefix: str, token: str):
-    dateien = st.file_uploader(
-        # "image" statt einzelner Endungen: nur so bieten Handys neben der Kamera auch die Galerie an.
-        # Das Format prüft danach photo_storage.aufbereiten.
-        "Fotos hinzufügen", type="image", accept_multiple_files=True,
-        key=f"{prefix}_fotos_{token}", max_upload_size=MAX_UPLOAD_MB,
-        help=f"JPEG, PNG oder WebP, je Foto höchstens {MAX_UPLOAD_MB} MB. Mehrere Fotos auf einmal auswählen ist möglich. "
-             "Ortsangaben (GPS) in den Fotos werden beim Speichern entfernt.",
-    ) or []
+    # Fotos werden einzeln ausgewählt und hier gesammelt: Erlaubt die Auswahl mehrere Dateien auf
+    # einmal, bieten Samsung-Handys nur Kamera und Dateimanager an, aber nicht die Galerie.
+    # "image" statt einzelner Endungen, damit überhaupt Bild-Apps angeboten werden; das Format
+    # prüft danach photo_storage.aufbereiten.
+    dateien = SS.setdefault(f"{prefix}_sammlung_{token}", [])
+    runde = SS.setdefault(f"{prefix}_runde_{token}", 0)
+    hilfe = (f"JPEG, PNG oder WebP, je Foto höchstens {MAX_UPLOAD_MB} MB. "
+             "Ortsangaben (GPS) in den Fotos werden beim Speichern entfernt.")
+    einzeln = st.file_uploader(
+        "Foto hinzufügen" if not dateien else "Weiteres Foto hinzufügen", type="image",
+        key=f"{prefix}_foto_{token}_{runde}", max_upload_size=MAX_UPLOAD_MB,
+        help=hilfe + " Für jedes weitere Foto erneut antippen.",
+    )
+    with st.expander("Mehrere Fotos auf einmal (z. B. am Computer)", icon=":material/photo_library:"):
+        mehrere = st.file_uploader("Fotos auswählen", type="image", accept_multiple_files=True,
+                                   key=f"{prefix}_fotos_{token}_{runde}", max_upload_size=MAX_UPLOAD_MB,
+                                   help=hilfe) or []
+    if einzeln or mehrere:
+        _sammeln(dateien, [einzeln] if einzeln else mehrere)
+        SS[f"{prefix}_runde_{token}"] = runde + 1  # Auswahlfeld leeren für das nächste Foto
+        st.rerun()
+
     beschriftungen, titel = {}, None
     if dateien:
         with st.container(horizontal=True):
-            for i, d in enumerate(dateien):
+            for i, d in enumerate(list(dateien)):
                 with st.container(width=170):
                     st.image(d, width=160, alt=d.name)
-                    beschriftungen[i] = st.text_input("Bildunterschrift", key=f"{prefix}_cap_{token}_{i}",
+                    beschriftungen[i] = st.text_input("Bildunterschrift", key=f"{prefix}_cap_{token}_{d.file_id}",
                                                       label_visibility="collapsed", placeholder="Bildunterschrift")
+                    if st.button("Entfernen", key=f"{prefix}_weg_{token}_{d.file_id}", icon=":material/close:",
+                                 type="tertiary"):
+                        dateien.remove(d)
+                        st.rerun()
         if len(dateien) > 1:
             titel = st.selectbox("Titelbild", range(len(dateien)), format_func=lambda i: dateien[i].name,
                                  key=f"{prefix}_titel_{token}")
@@ -621,6 +645,7 @@ def fotos_verwalten(sp, tour: dict) -> None:
         if gespeichert and not tour.get("titelbild_id") and not fotos:
             sp.update_tour(tour["id"], {"titelbild_id": gespeichert[0]["id"]})
         neu_laden()
+        SS.pop(f"fv_sammlung_{SS['fv_token']}", None)
         SS["fv_token"] = neue_id()  # Auswahl leeren, damit nichts doppelt hochgeladen wird
         if fehler:
             SS["mm_foto_fehler"] = fehler
