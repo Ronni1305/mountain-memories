@@ -309,11 +309,18 @@ def _fotos_hochladen(sp, tour_id: str, dateien, beschriftungen: dict[int, str]) 
         balken.progress(i / len(dateien), text=f"Foto {i + 1} von {len(dateien)}: {datei.name}")
         try:
             foto = aufbereiten(datei.getvalue(), datei.name)
-            gespeichert.append(sp.add_photo(tour_id, foto, beschriftungen.get(i)))
+            gespeichert.append(dict(sp.add_photo(tour_id, foto, beschriftungen.get(i)), auswahl_nr=i))
         except (FotoFehler, SpeicherFehler) as exc:
             fehler.append(str(exc))
     balken.empty()
     return gespeichert, fehler
+
+
+def _titelbild_setzen(sp, tour_id: str, dateien, titel: int | None, gespeichert: list[dict]) -> None:
+    """Titelbild = gewähltes Foto, falls es gespeichert wurde, sonst das erste gespeicherte."""
+    if gespeichert:
+        gewaehlt = next((g for g in gespeichert if g["auswahl_nr"] == titel), gespeichert[0])
+        sp.update_tour(tour_id, {"titelbild_id": gewaehlt["id"]})
 
 
 def _sammeln(sammlung: list, neue) -> None:
@@ -322,7 +329,7 @@ def _sammeln(sammlung: list, neue) -> None:
             sammlung.append(d)
 
 
-def _foto_auswahl(prefix: str, token: str):
+def _foto_auswahl(prefix: str, token: str, titelwahl: bool = True):
     # Fotos werden einzeln ausgewählt und hier gesammelt: Erlaubt die Auswahl mehrere Dateien auf
     # einmal, bieten Samsung-Handys nur Kamera und Dateimanager an, aber nicht die Galerie.
     # "image" statt einzelner Endungen, damit überhaupt Bild-Apps angeboten werden; das Format
@@ -349,21 +356,29 @@ def _foto_auswahl(prefix: str, token: str):
 
     beschriftungen, titel = {}, None
     if dateien:
+        # Titelbild direkt am Vorschaubild wählen – Dateinamen vom Handy sagen nichts aus.
+        titel_id = SS.get(f"{prefix}_titel_{token}")
+        if not any(d.file_id == titel_id for d in dateien):
+            titel_id = dateien[0].file_id
+        if titelwahl and len(dateien) > 1:
+            st.caption("Das Foto mit ⭐ wird als Titelbild der Tour gezeigt.")
         with st.container(horizontal=True):
             for i, d in enumerate(list(dateien)):
                 with st.container(width=170):
                     st.image(d, width=160, alt=d.name)
+                    if titelwahl and d.file_id == titel_id:
+                        titel = i
+                        st.badge("Titelbild", icon=":material/star:", color="green")
+                    elif titelwahl and st.button("Als Titelbild", key=f"{prefix}_alstitel_{token}_{d.file_id}",
+                                                 icon=":material/star_border:", type="tertiary"):
+                        SS[f"{prefix}_titel_{token}"] = d.file_id
+                        st.rerun()
                     beschriftungen[i] = st.text_input("Bildunterschrift", key=f"{prefix}_cap_{token}_{d.file_id}",
                                                       label_visibility="collapsed", placeholder="Bildunterschrift")
                     if st.button("Entfernen", key=f"{prefix}_weg_{token}_{d.file_id}", icon=":material/close:",
                                  type="tertiary"):
                         dateien.remove(d)
                         st.rerun()
-        if len(dateien) > 1:
-            titel = st.selectbox("Titelbild", range(len(dateien)), format_func=lambda i: dateien[i].name,
-                                 key=f"{prefix}_titel_{token}")
-        else:
-            titel = 0
     return dateien, beschriftungen, titel
 
 
@@ -420,11 +435,7 @@ def neue_tour_formular(sp) -> None:
             st.error(f"{exc} Deine Eingaben bleiben erhalten.")
             return
         gespeichert, foto_fehler = _fotos_hochladen(sp, token, dateien, beschriftungen)
-        if gespeichert and titel is not None and titel < len(dateien):
-            # Titelbild = gewähltes Foto, falls es gespeichert wurde, sonst das erste gespeicherte
-            namen = [d.name for d in dateien]
-            gewaehlt = next((g for g in gespeichert if g["dateiname"] == namen[titel]), gespeichert[0])
-            sp.update_tour(token, {"titelbild_id": gewaehlt["id"]})
+        _titelbild_setzen(sp, token, dateien, titel, gespeichert)
         neu_laden()
         text = f"„{daten['name']}“ wurde gespeichert"
         text += f" – mit {len(gespeichert)} Foto{'s' if len(gespeichert) != 1 else ''}." if gespeichert else "."
@@ -649,11 +660,12 @@ def fotos_verwalten(sp, tour: dict) -> None:
         st.caption("Noch keine Fotos.")
 
     SS.setdefault("fv_token", neue_id())
-    dateien, beschriftungen, _ = _foto_auswahl("fv", SS["fv_token"])
+    # Hat die Tour schon Fotos, wird das Titelbild oben bei den gespeicherten Fotos gewählt.
+    dateien, beschriftungen, titel = _foto_auswahl("fv", SS["fv_token"], titelwahl=not fotos)
     if dateien and st.button("Fotos speichern", type="primary", icon=":material/upload:", key="fv_hochladen"):
         gespeichert, fehler = _fotos_hochladen(sp, tour["id"], dateien, beschriftungen)
-        if gespeichert and not tour.get("titelbild_id") and not fotos:
-            sp.update_tour(tour["id"], {"titelbild_id": gespeichert[0]["id"]})
+        if not fotos:
+            _titelbild_setzen(sp, tour["id"], dateien, titel, gespeichert)
         neu_laden()
         SS.pop(f"fv_sammlung_{SS['fv_token']}", None)
         SS["fv_token"] = neue_id()  # Auswahl leeren, damit nichts doppelt hochgeladen wird

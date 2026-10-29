@@ -174,3 +174,18 @@ def test_ortssuche_springt_zum_ersten_treffer_auch_bei_gleichen_namen(app_mit_to
     at.selectbox(key="nt_treffer_Wildspitze").set_value(2).run()
     at.run()
     assert at.session_state["nt_ansicht"]["center"] == (46.8602, 10.9150)
+
+
+def test_titelbild_am_vorschaubild_waehlen(app_mit_tour):
+    fotos = [_Datei(bild_bytes(), "x.jpg"), _Datei(bild_bytes(farbe=(10, 120, 200)), "y.jpg")]
+    at = lauf("app_pages/neue_tour.py", nt_token="t-titel",
+              **{"nt_sammlung_t-titel": fotos, "nt_pos": (47.2, 11.2), "nt_geo_fuer": (47.2, 11.2)})
+    at.button(key="nt_alstitel_t-titel_y.jpg").click().run()
+    assert not at.exception
+    at.segmented_control(key="nt_art").set_value("wandern").run()
+    at.text_input(key="nt_name").set_value("Titeltest").run()
+    at.button(key="nt_speichern").click().run()
+    assert not at.exception
+    tour = app_mit_tour.get_tour("t-titel")
+    titel = next(f for f in app_mit_tour.list_photos("t-titel") if f["id"] == tour["titelbild_id"])
+    assert titel["dateiname"] == "y.jpg"
