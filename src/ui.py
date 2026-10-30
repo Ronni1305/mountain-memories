@@ -60,6 +60,10 @@ def meldung_zeigen() -> None:
     if "mm_meldung" in SS:
         art, text = SS.pop("mm_meldung")
         getattr(st, art)(text, icon=":material/check_circle:" if art == "success" else None)
+        if art == "success":
+            # Der Hinweis oben auf der Seite ist am Handy nach dem Speichern oft nicht im Bild –
+            # die Einblendung erscheint unabhängig davon, wo man gerade ist.
+            st.toast(text, icon="✅", duration="long")
 
 
 def tour_oeffnen(tour_id: str, bearbeiten: bool = False) -> None:

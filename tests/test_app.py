@@ -115,6 +115,7 @@ def test_neue_tour_ohne_namen_und_ohne_hoehe_speichern(app_mit_tour):
     neu = next(t for t in touren if t["name"].startswith("Wanderung vom"))
     assert neu["hoehe_m"] is None and neu["dauer_min"] is None
     assert any("gespeichert" in s.value for s in at.success)
+    assert any("gespeichert" in t.value for t in at.toast)  # auch am Handy sichtbar, egal wo man ist
 
 
 def test_favorit_markieren_und_filtern(app_mit_tour):
